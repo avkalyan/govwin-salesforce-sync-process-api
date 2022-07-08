@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="cb6e57dd-d5b5-4ca6-8b91-fa6e0e24682d" basePath="/retrieveOpps">
+		<http:listener-connection host="0.0.0.0" port="8081" connectionIdleTimeout="120000"/>
+	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="2ff352d3-3466-4db0-8387-c0e8bb6df321" file="mule-artifact.properties" />
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="0965a80f-649f-45e3-a62c-29c88c003071" >
+		<salesforce:basic-connection username="avkalyan.c@gmail.com" password="iLuvSalesforce@123" securityToken="FOydlY36K9GabL4qTwgIRDeYH"/>
+	</salesforce:sfdc-config>
+	<flow name="govwin-salesforce-yellow-keywords" doc:id="64e92094-8ea3-4692-9cb8-f1b0304696e9">
+		<http:listener doc:name="Listener" doc:id="1dc94aa9-88e5-47fc-bb90-bcf360b918b3" config-ref="HTTP_Listener_config" path="/yellow-keywords" />
+		<http:request method="GET" doc:name="Request" doc:id="65fd364b-ec89-4b8c-baae-bcd4c96f8c55" url="http://localhost:8081/retrieveOpps/invokeGovWin" />
+		<scatter-gather doc:name="Scatter-Gather" doc:id="da744e5f-2044-4b00-8767-11302b02b67e">
+			<route>
+				<ee:transform doc:name="Transform Message" doc:id="ae35d827-2fa8-49c8-959d-67c45aad9677">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[
+	((p('yellow.keywords') splitBy ",") reduce ((item,acc = []) -> acc ++ (payload.opportunities filter ($.description contains(item)))))
+]
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+			<route>
+				<ee:transform doc:name="Transform Message" doc:id="9a7e2772-edef-45d4-8422-bd32b97b2c04">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[
+	((p('yellow.keywords') splitBy ",") reduce ((item,acc = []) -> acc ++ (payload.opportunities filter ($.govEntity.title contains(item)))))
+]
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+			<route>
+				<ee:transform doc:name="Transform Message" doc:id="5e6a98f4-8d6c-40c7-a62f-e99e98043812">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[
+	((p('yellow.keywords') splitBy ",") reduce ((item,acc = []) -> acc ++ (payload.opportunities filter ($.title contains(item)))))
+]
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="ae3899e9-bfa3-4016-af8c-d5e968675044">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+flatten(flatten(payload..*payload)) default[] distinctBy ($.id)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="Flow Reference" doc:id="a74c7b0a-d684-4ec0-85e6-cefad6b7be8c" name="govwin-salesforce-api-CreateRecords-Flow"/>
+	</flow>
+	<flow name="govwin-salesforce-govwin-endpoint" doc:id="7a127d12-ef5c-4772-aac8-68db5bb62e1f">
+		<http:listener doc:name="Listener" doc:id="ab8a7dd5-3a8c-4796-a0a1-51f2492de1c7" config-ref="HTTP_Listener_config" path="/invokeGovWin" />
+		<set-payload value='#[output application/json --- readUrl("classpath://sample_5000Records.json","application/json")]' doc:name="Set Payload" doc:id="0ae92535-14fa-4b1a-b362-83d65790179f" />
+	</flow>
+	<flow name="govwin-salesforce-yellow-blue-keywords" doc:id="4d60e225-b0a6-4fe7-aac9-b8b6b6138a12" >
+		<http:listener doc:name="Listener" doc:id="39b51624-6624-41e4-b453-7eb2eb0a04e6" config-ref="HTTP_Listener_config" path="/yellow-blue-keywords"/>
+		<http:request method="GET" doc:name="Request" doc:id="3eed4450-78b2-4ed8-91f1-747a1cd50d92" url="http://localhost:8081/retrieveOpps/invokeGovWin"/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="5a5e3dfb-2239-4e8b-8bcc-305d4b1ef1ac" >
+			<route >
+				<ee:transform doc:name="Transform Message" doc:id="6c80a396-d361-4020-acc4-9f963235bd6b">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[
+	((p('yellow.keywords') splitBy ",") reduce ((item,acc = []) -> acc ++ (payload.opportunities filter ($.description contains(item))))),
+	((p('blue.keywords') splitBy ",") reduce ((item,acc = []) -> acc ++ (payload.opportunities filter ($.description contains(item)))))
+]
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</route>
+			<route >
+				<ee:transform doc:name="Transform Message" doc:id="f014ad3d-49d2-458f-8963-96d50aed0e01" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[
+	((p('yellow.keywords') splitBy ",") reduce ((item,acc = []) -> acc ++ (payload.opportunities filter ($.govEntity.title contains(item))))),
+	((p('blue.keywords') splitBy ",") reduce ((item,acc = []) -> acc ++ (payload.opportunities filter ($.govEntity.title contains(item)))))
+]
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+			<route >
+				<ee:transform doc:name="Transform Message" doc:id="36bb9527-8fbe-4615-96e9-2ab9343a7a2c" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[
+	((p('yellow.keywords') splitBy ",") reduce ((item,acc = []) -> acc ++ (payload.opportunities filter ($.title contains(item))))),
+	((p('blue.keywords') splitBy ",") reduce ((item,acc = []) -> acc ++ (payload.opportunities filter ($.title contains(item)))))
+]
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="e059a104-8535-47df-9534-b5a27f7301a7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+flatten(flatten(payload..*payload)) default[] distinctBy ($.id)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="Add Accounts in Salesforce" doc:id="f809e873-2751-4223-8fc8-a3610bb2fc6c" name="govwin-salesforce-api-CreateRecords-Flow"/>
+	</flow>
+	<sub-flow name="govwin-salesforce-api-CreateRecords-Flow" doc:id="30664b7b-15a3-428a-b207-e2100e398bd9" >
+		<ee:transform doc:name="Transform Message" doc:id="e2e7fb9f-9a34-4876-893e-8dfc20228771">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload map (item, index) -> {
+	Name: item.title,
+	Type: item."type",
+	AccountNumber: item.solicitationNumber,
+	Description: item.description,
+	Active__c: item.status,
+	NaicsCode: item.primaryNAICS.id, 
+	Industry: item.govEntity.title
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create doc:name="Create" doc:id="480b67e3-8074-4e43-888f-0559aa85749e" config-ref="Salesforce_Config" type="Account" />
+		<ee:transform doc:name="Transform Message" doc:id="5eb9afb1-6f71-4298-a0c7-1559f54e4d24">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+</mule>
