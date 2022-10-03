@@ -12,7 +12,7 @@ http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mu
 	</http:listener-config>
 	<configuration-properties doc:name="Configuration properties" doc:id="2ff352d3-3466-4db0-8387-c0e8bb6df321" file="mule-artifact.properties" />
 	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="0965a80f-649f-45e3-a62c-29c88c003071" >
-		<salesforce:basic-connection username="avkalyan.c@gmail.com" password="iLuvSalesforce@123" securityToken="FOydlY36K9GabL4qTwgIRDeYH"/>
+		<salesforce:basic-connection username="" password="" securityToken=""/>
 	</salesforce:sfdc-config>
 	<flow name="govwin-salesforce-yellow-keywords" doc:id="64e92094-8ea3-4692-9cb8-f1b0304696e9">
 		<http:listener doc:name="Listener" doc:id="1dc94aa9-88e5-47fc-bb90-bcf360b918b3" config-ref="HTTP_Listener_config" path="/yellow-keywords" />
